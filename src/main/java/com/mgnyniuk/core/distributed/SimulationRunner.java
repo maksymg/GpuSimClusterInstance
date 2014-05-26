@@ -5,6 +5,7 @@ import com.mgnyniuk.core.MainClass;
 import com.mgnyniuk.core.parallel.NotifyingThread;
 import com.mgnyniuk.core.parallel.ThreadListener;
 import com.mgnyniuk.core.parallel.WorkerThread;
+import com.mgnyniuk.core.util.FileManager;
 
 import java.beans.XMLEncoder;
 import java.io.FileNotFoundException;
@@ -35,17 +36,24 @@ public class SimulationRunner implements Callable<Boolean>, Serializable {
         this.startIndex = startIndex;
     }
 
-    private void serializeConfigs(Map<Integer, GridSimConfig> configMap) throws FileNotFoundException {
+    private void serializeConfigs(Map<Integer, GridSimConfig> configMap) {
+
+        System.out.println("Overall : " + overallProcessesQuantity);
 
         for (Integer i=startIndex; i < overallProcessesQuantity; i++) {
 
             GridSimConfig gridSimConfig = configMap.get(i);
 
-            FileOutputStream out = new FileOutputStream("config" + i + ".xml");
-            XMLEncoder xmlEncoder = new XMLEncoder(out);
-            xmlEncoder.writeObject(gridSimConfig);
-            xmlEncoder.flush();
-            xmlEncoder.close();
+            try {
+                FileOutputStream out = new FileOutputStream("config" + i + ".xml");
+                XMLEncoder xmlEncoder = new XMLEncoder(out);
+                xmlEncoder.writeObject(gridSimConfig);
+                xmlEncoder.flush();
+                xmlEncoder.close();
+            } catch (FileNotFoundException ex) {
+                System.out.println(ex.getMessage());
+            }
+
         }
 
     }
@@ -54,7 +62,16 @@ public class SimulationRunner implements Callable<Boolean>, Serializable {
     public Boolean call() throws Exception {
         System.out.println("Hello Hazelcast from Slave!!!");
 
-        System.out.print("configMap Size: " + MainClass.configMap.size());
+        System.out.println("configMap Size: " + MainClass.configMap.size());
+
+        System.out.println("OverallProcessesQuantity: " + overallProcessesQuantity);
+        System.out.println("PartProcessesQuantity: " + partProcessesQuantity);
+        System.out.println("StartIndex: " + startIndex);
+
+        // delete configs files from previous experiment
+        FileManager.deleteFilesFromCurrentDir("config.*\\.xml");
+        // delete outputs files from previous experiment
+        FileManager.deleteFilesFromCurrentDir("output.*\\.xml");
 
         serializeConfigs(MainClass.configMap);
 
