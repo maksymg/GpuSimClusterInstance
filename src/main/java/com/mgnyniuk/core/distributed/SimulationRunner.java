@@ -1,13 +1,17 @@
 package com.mgnyniuk.core.distributed;
 
 import com.gpusim2.config.GridSimConfig;
+import com.gpusim2.config.GridSimOutput;
+import com.gpusim2.config.IncompatibleVersionException;
 import com.mgnyniuk.core.MainClass;
 import com.mgnyniuk.core.parallel.NotifyingThread;
 import com.mgnyniuk.core.parallel.ThreadListener;
 import com.mgnyniuk.core.parallel.WorkerThread;
 import com.mgnyniuk.core.util.FileManager;
 
+import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.Serializable;
@@ -40,12 +44,12 @@ public class SimulationRunner implements Callable<Boolean>, Serializable {
 
         System.out.println("Overall : " + overallProcessesQuantity);
 
-        for (Integer i=startIndex; i < overallProcessesQuantity; i++) {
+        for (Integer i = 0; i < overallProcessesQuantity; i++) {
 
             GridSimConfig gridSimConfig = configMap.get(i);
 
             try {
-                FileOutputStream out = new FileOutputStream("config" + i + ".xml");
+                FileOutputStream out = new FileOutputStream("config" + (i + startIndex) + ".xml");
                 XMLEncoder xmlEncoder = new XMLEncoder(out);
                 xmlEncoder.writeObject(gridSimConfig);
                 xmlEncoder.flush();
@@ -56,6 +60,21 @@ public class SimulationRunner implements Callable<Boolean>, Serializable {
 
         }
 
+    }
+
+    private void deserializeOutputs(Map<Integer, GridSimOutput> outputMap) throws FileNotFoundException, IncompatibleVersionException {
+
+        GridSimOutput gridSimOutput;
+
+        for (int i = 0; i < overallProcessesQuantity; i++) {
+
+            FileInputStream in = new FileInputStream("output" + (i + startIndex) + ".xml");
+            XMLDecoder xmlDecoder = new XMLDecoder(in);
+            gridSimOutput = (GridSimOutput) xmlDecoder.readObject();
+            xmlDecoder.close();
+
+            outputMap.put(i + startIndex, gridSimOutput);
+        }
     }
 
     @Override
@@ -97,6 +116,8 @@ public class SimulationRunner implements Callable<Boolean>, Serializable {
                 continue;
             }
         }
+
+        deserializeOutputs(MainClass.outputMap);
 
         return true;
     }
