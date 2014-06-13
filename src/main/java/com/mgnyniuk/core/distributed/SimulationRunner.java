@@ -97,10 +97,26 @@ public class SimulationRunner implements Callable<Boolean>, Serializable {
         //ConfigurationUtil.serializeConfigs(gridSimConfigList, startIndex);
         ThreadListener threadListener = new ThreadListener();
 
+        int parallelPacks = 0;
+        boolean isWithModulo = false;
+        if (overallProcessesQuantity % partProcessesQuantity == 0) {
+            parallelPacks = overallProcessesQuantity / partProcessesQuantity;
+        } else {
+            parallelPacks = overallProcessesQuantity / partProcessesQuantity + 1;
+            isWithModulo = true;
+        }
 
-        for (int j = 0; j < overallProcessesQuantity/partProcessesQuantity; j++) {
+        for (int j = 0; j < parallelPacks; j++) {
             ExecutorService es = Executors.newCachedThreadPool();
-            for (int i = startIndex; i < startIndex + partProcessesQuantity; i++) {
+
+            int processingConfigQuantity = 0;
+            if (isWithModulo && j == (parallelPacks - 1)) {
+                processingConfigQuantity = overallProcessesQuantity % partProcessesQuantity;
+            } else {
+                processingConfigQuantity = partProcessesQuantity;
+            }
+
+            for (int i = startIndex; i < startIndex + processingConfigQuantity; i++) {
 
                 NotifyingThread notifyingThread = new WorkerThread("GpuSimV2.jar",
                         String.format(CONFIG, (i + j * partProcessesQuantity)),
